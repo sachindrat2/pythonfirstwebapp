@@ -1,23 +1,34 @@
-
-
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from passlib.context import CryptContext
-
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
 import uvicorn
 import secrets
 from database import create_user as db_create_user, get_user as db_get_user
+from fastapi.middleware.cors import CORSMiddleware
 
 # --- FastAPI app ---
 
 app = FastAPI()
+origins = [
+    "http://localhost:8081",  # your Kotlin Web frontend
+    "http://127.0.0.1:8081",
+    # you can add more origins if needed
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,      # allow these origins
+    allow_credentials=True,      # allow cookies / auth headers
+    allow_methods=["*"],         # allow GET, POST, PUT, DELETE, etc
+    allow_headers=["*"],         # allow headers
+)
+
 
 # --- Root Endpoint ---
 from fastapi.responses import HTMLResponse
-
 @app.get("/", response_class=HTMLResponse)
 async def read_root():
     return """
