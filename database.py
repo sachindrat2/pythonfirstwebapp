@@ -22,6 +22,11 @@ def create_database():
             password TEXT NOT NULL
         )
     """)
+    # Migration: add is_admin column if missing
+    cursor.execute("PRAGMA table_info(users)")
+    columns = [col[1] for col in cursor.fetchall()]
+    if "is_admin" not in columns:
+        cursor.execute("ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0")
     conn.commit()
     conn.close()
 
@@ -36,11 +41,11 @@ def create_note(title: str, content: str):
     conn.close()
     return row
 
-def create_user(username: str, password: str):
+def create_user(username: str, password: str, is_admin: int = 0):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     try:
-        cursor.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, password))
+        cursor.execute("INSERT INTO users (username, password, is_admin) VALUES (?, ?, ?)", (username, password, is_admin))
         conn.commit()
         user_id = cursor.lastrowid
     except sqlite3.IntegrityError:
@@ -49,10 +54,35 @@ def create_user(username: str, password: str):
     conn.close()
     return user_id
 
+def list_users():
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, username, is_admin FROM users")
+    users = cursor.fetchall()
+    conn.close()
+    return users
+
+def get_user_by_id(user_id: int):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, username, is_admin FROM users WHERE id = ?", (user_id,))
+    user = cursor.fetchone()
+    conn.close()
+    return user
+
+def delete_user(user_id: int):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    conn.commit()
+    deleted = cursor.rowcount
+    conn.close()
+    return deleted
+
 def get_user(username: str):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("SELECT id, username, password FROM users WHERE username = ?", (username,))
+    cursor.execute("SELECT id, username, password, is_admin FROM users WHERE username = ?", (username,))
     user = cursor.fetchone()
     conn.close()
     return user
