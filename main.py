@@ -257,18 +257,7 @@ async def admin_dashboard(request: Request):
             "debug_info": None
         }
     )
-    users = db_list_users()
-    debug_info.append(f"Users list: {users}")
-    return templates.TemplateResponse(
-        "admin_dashboard.html",
-        {
-            "request": request,
-            "user": user,
-            "users": users,
-            "token": token,
-            "debug_info": "\n".join(debug_info)
-        }
-    )
+   
 # --- Admin Create User ---
 @app.post("/admin/create", response_class=HTMLResponse)
 async def admin_create_user_html(
