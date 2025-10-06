@@ -67,6 +67,7 @@ jobs:
         uses: azure/webapps-deploy@v3
         id: deploy-to-webapp
         with:
+          # Update app-name and slot-name below if you create a new App Service or slot
           app-name: 'pythontestingwebapp'
           slot-name: 'Production'
           
