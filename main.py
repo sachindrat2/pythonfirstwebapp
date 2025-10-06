@@ -16,7 +16,7 @@ origins = [
     "http://localhost:8081",  # your Kotlin Web frontend
     "http://127.0.0.1:8081",
     "http://localhost:8080",   # your Kotlin frontend
-    "http://127.0.0.1:8080",
+    "http://127.0.0.1:8083",
     # you can add more origins if needed
 ]
 
