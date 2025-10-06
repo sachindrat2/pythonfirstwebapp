@@ -18,8 +18,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: false
+
       - name: Set up Python version
         uses: actions/setup-python@v5
         with:
@@ -59,9 +58,9 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_665E893E3D954C528E1B8FF331631E5C }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_16598AF3DC1C4C1C86D6BE8639C9BC58 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_32FD7FE9D96347098D4668213FBA1372 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_E50DE4266D574C8F9F9B7DA4D67DC1AE }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_4868D2A540054EA2A53D6728028FFEE2 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_680E2671CB92460593521672481C6EA1 }}
 
       - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
