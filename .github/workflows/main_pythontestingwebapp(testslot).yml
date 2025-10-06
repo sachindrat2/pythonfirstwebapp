@@ -59,15 +59,14 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_68D37055F397426B87810273D17AB0BA }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_0963927B23D44C118BE414E036475946 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_6C98DD48FCE547F99BB3D116ECBEEBEC }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_1C7B20A0848C48CA86290A38BCA38345 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_A0CEDC31F98C47479D8D7D2D6F636D30 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_D598B69A1648452C9B314A02A6724E7A }}
 
       - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
         id: deploy-to-webapp
         with:
-          # Update app-name and slot-name below if you create a new App Service or slot
-          app-name: 'pythontestweb'
+          app-name: 'pythontestingwebapp'
           slot-name: 'testslot'
           
