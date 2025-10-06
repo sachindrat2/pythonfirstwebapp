@@ -67,5 +67,5 @@ jobs:
         id: deploy-to-webapp
         with:
           app-name: 'ownnoteapp'
-          slot-name: 'Production'
+         
           
