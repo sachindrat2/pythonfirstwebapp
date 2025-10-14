@@ -14,9 +14,14 @@ import uvicorn
 app = FastAPI()
 
 origins = [
-    "http://localhost:3000",
+    "http://localhost:8081",
+    "http://127.0.0.1:8081",
+    "http://localhost:8080",
+    "http://127.0.0.1:8083",
+    "http://192.168.182.108:8080"
+    "http://localhost:8080",  # for local testing
     "http://127.0.0.1:8080",
-    "http://192.168.182.108:8080",
+    "https://ownnoteapp-hedxcahwcrhwb8hb.canadacentral-01.azurewebsites.net",  # deployed frontend if any
 ]
 
 app.add_middleware(
