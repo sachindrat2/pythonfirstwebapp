@@ -1,3 +1,9 @@
+# --- Logout endpoint ---
+@app.post("/logout")
+async def logout():
+    # For JWT, logout is handled client-side by deleting the token.
+    # Optionally, you can instruct the client to remove the token.
+    return {"message": "Logged out. Please remove the token from your client."}
 import os
 from fastapi import FastAPI, HTTPException, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
