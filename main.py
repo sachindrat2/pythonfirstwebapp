@@ -1,9 +1,14 @@
-# --- Logout endpoint ---
-@app.post("/logout")
-async def logout():
-    # For JWT, logout is handled client-side by deleting the token.
-    # Optionally, you can instruct the client to remove the token.
-    return {"message": "Logged out. Please remove the token from your client."}
+import os
+from fastapi import FastAPI, HTTPException, Depends, Form, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.templating import Jinja2Templates
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from pydantic import BaseModel
+from passlib.context import CryptContext
+from jose import jwt, JWTError
+from datetime import datetime, timedelta
+import uvicorn
 import os
 from fastapi import FastAPI, HTTPException, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -19,17 +24,17 @@ import uvicorn
 # --- FastAPI app ---
 app = FastAPI()
 
+# --- CORS ---
 origins = [
     "http://localhost:8081",
     "http://127.0.0.1:8081",
     "http://localhost:8080",
     "http://127.0.0.1:8083",
-    "http://192.168.182.108:8080"
+    "http://192.168.182.108:8080",
     "http://localhost:8080",  # for local testing
     "http://127.0.0.1:8080",
     "https://ownnoteapp-hedxcahwcrhwb8hb.canadacentral-01.azurewebsites.net",  # deployed frontend if any
 ]
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -37,12 +42,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# --- Logout endpoint ---
+@app.post("/logout")
+async def logout():
+    # For JWT, logout is handled client-side by deleting the token.
+    # Optionally, you can instruct the client to remove the token.
+    return {"message": "Logged out. Please remove the token from your client."}
+
+# --- Templates ---
 templates = Jinja2Templates(directory="templates")
 
 # --- Security setup ---
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 SECRET_KEY = os.environ.get("NOTES_APP_SECRET_KEY", "supersecretkey123")
@@ -102,7 +115,6 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
             raise HTTPException(status_code=401, detail="Invalid authentication")
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid authentication")
-    
     user = db_get_user(username)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid authentication")
@@ -110,7 +122,6 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 
 def is_admin_user(user):
     return user and len(user) > 3 and user[3] == 1
-
 
 # --- Routes ---
 @app.get("/", response_class=HTMLResponse)
