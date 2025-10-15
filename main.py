@@ -1,14 +1,4 @@
-import os
-from fastapi import FastAPI, HTTPException, Depends, Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.templating import Jinja2Templates
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from pydantic import BaseModel
-from passlib.context import CryptContext
-from jose import jwt, JWTError
-from datetime import datetime, timedelta
-import uvicorn
+
 import os
 from fastapi import FastAPI, HTTPException, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -21,8 +11,14 @@ from jose import jwt, JWTError
 from datetime import datetime, timedelta
 import uvicorn
 
+
 # --- FastAPI app ---
 app = FastAPI()
+
+# --- Test Swagger visibility ---
+@app.get("/test-visibility")
+def test_visibility():
+    return {"status": "visible"}
 
 # --- CORS ---
 origins = [
