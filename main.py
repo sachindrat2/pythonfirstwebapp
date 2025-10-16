@@ -29,6 +29,8 @@ origins = [
     "http://192.168.182.108:8080",
     "http://localhost:8080",  # for local testing
     "http://127.0.0.1:8080",
+    "http://localhost:3000",  # React frontend
+    "http://127.0.0.1:3000",
     "https://ownnoteapp-hedxcahwcrhwb8hb.canadacentral-01.azurewebsites.net",  # deployed frontend if any
 ]
 app.add_middleware(
