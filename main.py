@@ -10,7 +10,10 @@ from passlib.context import CryptContext
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
 import uvicorn
-
+# --- CORS ---
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 
 # --- FastAPI app ---
 app = FastAPI()
@@ -41,34 +44,45 @@ async def cors_test(request: Request):
         "timestamp": datetime.utcnow().isoformat()
     }
 
-# --- CORS ---
+
+
+
+# --- ✅ CORS configuration (move this right after app = FastAPI()) ---
 origins = [
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
     "http://localhost:8081",
     "http://127.0.0.1:8081",
-    "http://localhost:8080",
-    "http://127.0.0.1:8083",
-    "http://192.168.182.108:8080",
-    "http://localhost:8080",  # for local testing
-    "http://127.0.0.1:8080",
-    "http://localhost:3000",  # React frontend
+    "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "https://ownnoteapp-hedxcahwcrhwb8hb.canadacentral-01.azurewebsites.net",  # deployed backend
-    "https://sachindrat2.github.io",  # GitHub Pages frontend
-    "https://sachindrat2.github.io/reactnoteApp",  # GitHub Pages frontend with path
+    "https://sachindrat2.github.io",
+    "https://sachindrat2.github.io/reactnoteApp",
+    "https://ownnoteapp-hedxcahwcrhwb8hb.canadacentral-01.azurewebsites.net",
 ]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"],
 )
 
-# --- CORS preflight handler ---
+# --- ✅ Universal CORS preflight handler ---
 @app.options("/{full_path:path}")
 async def preflight_handler(request: Request, full_path: str):
-    return {"message": "OK"}
+    """
+    Handles all OPTIONS preflight requests to prevent CORS errors.
+    """
+    origin = request.headers.get("origin", "")
+    response = Response(status_code=200)
+    if origin in origins or "*" in origins:
+        response.headers["Access-Control-Allow-Origin"] = origin
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    return response
+
 
 # --- Logout endpoint ---
 @app.post("/logout")
