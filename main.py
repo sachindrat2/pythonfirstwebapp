@@ -20,6 +20,27 @@ app = FastAPI()
 def test_visibility():
     return {"status": "visible"}
 
+# --- Health check endpoint ---
+@app.get("/health")
+async def health_check():
+    return {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "cors_origins": len(origins),
+        "message": "API is running"
+    }
+
+# --- CORS test endpoint ---
+@app.get("/cors-test")
+async def cors_test(request: Request):
+    return {
+        "message": "CORS test successful",
+        "origin": request.headers.get("origin"),
+        "allowed_origins": origins,
+        "user_agent": request.headers.get("user-agent"),
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
 # --- CORS ---
 origins = [
     "http://localhost:8081",
@@ -31,15 +52,23 @@ origins = [
     "http://127.0.0.1:8080",
     "http://localhost:3000",  # React frontend
     "http://127.0.0.1:3000",
-    "https://ownnoteapp-hedxcahwcrhwb8hb.canadacentral-01.azurewebsites.net",  # deployed frontend if any
+    "https://ownnoteapp-hedxcahwcrhwb8hb.canadacentral-01.azurewebsites.net",  # deployed backend
+    "https://sachindrat2.github.io",  # GitHub Pages frontend
+    "https://sachindrat2.github.io/reactnoteApp",  # GitHub Pages frontend with path
 ]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
+
+# --- CORS preflight handler ---
+@app.options("/{full_path:path}")
+async def preflight_handler(request: Request, full_path: str):
+    return {"message": "OK"}
 
 # --- Logout endpoint ---
 @app.post("/logout")
