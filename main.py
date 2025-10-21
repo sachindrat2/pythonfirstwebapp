@@ -10,9 +10,6 @@ from passlib.context import CryptContext
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
 import uvicorn
-# --- CORS ---
-from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 
 # --- FastAPI app ---
@@ -22,6 +19,63 @@ app = FastAPI()
 @app.get("/test-visibility")
 def test_visibility():
     return {"status": "visible"}
+
+# --- CORS configuration ---
+origins = [
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+    "http://localhost:8081",
+    "http://127.0.0.1:8081", 
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://sachindrat2.github.io",
+    "https://sachindrat2.github.io/reactnoteApp",
+    "https://ownnoteapp-hedxcahwcrhwb8hb.canadacentral-01.azurewebsites.net",
+    # Add more specific GitHub Pages patterns
+    "https://sachindrat2.github.io/reactnoteApp/",
+    "https://sachindrat2.github.io/reactnoteApp/login",
+    "https://sachindrat2.github.io/reactnoteApp/notes",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
+    allow_headers=[
+        "Accept",
+        "Accept-Language", 
+        "Content-Language",
+        "Content-Type",
+        "Authorization",
+        "X-Requested-With",
+        "Origin",
+        "Cache-Control",
+        "Pragma",
+        "X-Custom-Header"
+    ],
+    expose_headers=["*"],
+    max_age=3600,
+)
+
+# --- Additional CORS middleware as backup ---
+@app.middleware("http")
+async def add_cors_headers(request: Request, call_next):
+    """
+    Additional middleware to ensure CORS headers are always present.
+    This is a backup in case the CORSMiddleware doesn't handle some edge cases.
+    """
+    response = await call_next(request)
+    origin = request.headers.get("origin")
+    
+    if origin and origin in origins:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH"
+        response.headers["Access-Control-Allow-Headers"] = "Accept, Accept-Language, Content-Language, Content-Type, Authorization, X-Requested-With, Origin, Cache-Control, Pragma"
+        response.headers["Vary"] = "Origin"
+    
+    return response
 
 # --- Health check endpoint ---
 @app.get("/health")
@@ -33,54 +87,58 @@ async def health_check():
         "message": "API is running"
     }
 
-# --- CORS test endpoint ---
-@app.get("/cors-test")
-async def cors_test(request: Request):
+# --- CORS debug endpoint ---
+@app.get("/cors-debug") 
+async def cors_debug(request: Request):
+    """Debug endpoint to check CORS configuration and request headers."""
     return {
-        "message": "CORS test successful",
-        "origin": request.headers.get("origin"),
+        "message": "CORS debug endpoint",
+        "request_headers": dict(request.headers),
+        "request_origin": request.headers.get("origin"),
         "allowed_origins": origins,
-        "user_agent": request.headers.get("user-agent"),
+        "cors_enabled": True,
+        "timestamp": datetime.utcnow().isoformat(),
+        "url": str(request.url),
+        "method": request.method
+    }
+
+# --- CORS test endpoint (POST) ---
+@app.post("/cors-test")
+async def cors_test_post(request: Request):
+    """Test POST request for CORS"""
+    return {
+        "message": "CORS POST test successful",
+        "origin": request.headers.get("origin"),
         "timestamp": datetime.utcnow().isoformat()
     }
 
 
 
 
-# --- ✅ CORS configuration (move this right after app = FastAPI()) ---
-origins = [
-    "http://localhost:8080",
-    "http://127.0.0.1:8080",
-    "http://localhost:8081",
-    "http://127.0.0.1:8081",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "https://sachindrat2.github.io",
-    "https://sachindrat2.github.io/reactnoteApp",
-    "https://ownnoteapp-hedxcahwcrhwb8hb.canadacentral-01.azurewebsites.net",
-]
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
-# --- ✅ Universal CORS preflight handler ---
+# --- Enhanced CORS preflight handler ---
 @app.options("/{full_path:path}")
 async def preflight_handler(request: Request, full_path: str):
     """
     Handles all OPTIONS preflight requests to prevent CORS errors.
+    This is a fallback for any requests that might not be handled by the middleware.
     """
     origin = request.headers.get("origin", "")
     response = Response(status_code=200)
-    if origin in origins or "*" in origins:
+    
+    # Check if origin is allowed
+    if origin in origins:
         response.headers["Access-Control-Allow-Origin"] = origin
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-    response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type"
+    elif any(origin.startswith(allowed) for allowed in origins):
+        response.headers["Access-Control-Allow-Origin"] = origin
+    
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH"
+    response.headers["Access-Control-Allow-Headers"] = "Accept, Accept-Language, Content-Language, Content-Type, Authorization, X-Requested-With, Origin, Cache-Control, Pragma"
     response.headers["Access-Control-Allow-Credentials"] = "true"
+    response.headers["Access-Control-Max-Age"] = "3600"
+    response.headers["Vary"] = "Origin"
+    
     return response
 
 
