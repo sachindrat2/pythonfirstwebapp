@@ -149,13 +149,62 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 # --- Notes CRUD endpoints ---
 @app.post("/notes", response_model=NoteOut)
 async def create_note(note: Note, user=Depends(get_current_user)):
-    row = db_create_note(note.title, note.content)
+    user_id = user[0]  # user[0] is the user ID from the database
+    row = db_create_note(note.title, note.content, user_id)
     return NoteOut(id=row[0], title=row[1], content=row[2], created_at=row[3])
 
 @app.get("/notes", response_model=list[NoteOut])
 async def get_notes(user=Depends(get_current_user)):
-    rows = db_get_notes()
+    user_id = user[0]  # user[0] is the user ID from the database
+    rows = db_get_notes(user_id)
     return [NoteOut(id=row[0], title=row[1], content=row[2], created_at=row[3]) for row in rows]
+
+@app.get("/admin/notes", response_model=list[NoteOut])
+async def get_all_notes(user=Depends(get_current_user)):
+    if not is_admin_user(user):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    rows = db_get_notes()  # Get all notes for admin
+    return [NoteOut(id=row[0], title=row[1], content=row[2], created_at=row[3]) for row in rows]
+
+@app.get("/notes/{note_id}", response_model=NoteOut)
+async def get_note(note_id: int, user=Depends(get_current_user)):
+    note = db_get_note(note_id)
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+    
+    # Check if user owns the note or is admin
+    if note[4] != user[0] and not is_admin_user(user):  # note[4] is user_id, user[0] is current user id
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    return NoteOut(id=note[0], title=note[1], content=note[2], created_at=note[3])
+
+@app.put("/notes/{note_id}", response_model=NoteOut)
+async def update_note(note_id: int, note: Note, user=Depends(get_current_user)):
+    existing_note = db_get_note(note_id)
+    if not existing_note:
+        raise HTTPException(status_code=404, detail="Note not found")
+    
+    # Check if user owns the note or is admin
+    if existing_note[4] != user[0] and not is_admin_user(user):  # existing_note[4] is user_id
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    updated_note = db_update_note(note_id, note.title, note.content)
+    return NoteOut(id=updated_note[0], title=updated_note[1], content=updated_note[2], created_at=updated_note[3])
+
+@app.delete("/notes/{note_id}")
+async def delete_note(note_id: int, user=Depends(get_current_user)):
+    existing_note = db_get_note(note_id)
+    if not existing_note:
+        raise HTTPException(status_code=404, detail="Note not found")
+    
+    # Check if user owns the note or is admin
+    if existing_note[4] != user[0] and not is_admin_user(user):  # existing_note[4] is user_id
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    deleted = db_delete_note(note_id)
+    if deleted:
+        return {"message": "Note deleted successfully"}
+    raise HTTPException(status_code=500, detail="Failed to delete note")
 
 # --- Admin dashboard route ---
 @app.get("/admin", response_class=HTMLResponse)

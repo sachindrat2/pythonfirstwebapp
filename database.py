@@ -12,7 +12,9 @@ def create_database():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL,
             content TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            user_id INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
         )
     """)
     cursor.execute("""
@@ -27,13 +29,22 @@ def create_database():
     columns = [col[1] for col in cursor.fetchall()]
     if "is_admin" not in columns:
         cursor.execute("ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0")
+    
+    # Migration: add user_id column to notes if missing
+    cursor.execute("PRAGMA table_info(notes)")
+    notes_columns = [col[1] for col in cursor.fetchall()]
+    if "user_id" not in notes_columns:
+        cursor.execute("ALTER TABLE notes ADD COLUMN user_id INTEGER")
+        # For existing notes without user_id, you might want to assign them to a default user
+        # or handle this migration differently based on your needs
+    
     conn.commit()
     conn.close()
 
-def create_note(title: str, content: str):
+def create_note(title: str, content: str, user_id: int):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO notes (title, content) VALUES (?, ?)", (title, content))
+    cursor.execute("INSERT INTO notes (title, content, user_id) VALUES (?, ?, ?)", (title, content, user_id))
     conn.commit()
     note_id = cursor.lastrowid
     cursor.execute("SELECT id, title, content, created_at FROM notes WHERE id = ?", (note_id,))
@@ -87,10 +98,13 @@ def get_user(username: str):
     conn.close()
     return user
 
-def get_notes():
+def get_notes(user_id: int = None):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("SELECT id, title, content, created_at FROM notes ORDER BY created_at DESC")
+    if user_id:
+        cursor.execute("SELECT id, title, content, created_at FROM notes WHERE user_id = ? ORDER BY created_at DESC", (user_id,))
+    else:
+        cursor.execute("SELECT id, title, content, created_at FROM notes ORDER BY created_at DESC")
     rows = cursor.fetchall()
     conn.close()
     return rows
@@ -98,7 +112,7 @@ def get_notes():
 def get_note(note_id: int):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("SELECT id, title, content, created_at FROM notes WHERE id = ?", (note_id,))
+    cursor.execute("SELECT id, title, content, created_at, user_id FROM notes WHERE id = ?", (note_id,))
     row = cursor.fetchone()
     conn.close()
     return row
@@ -108,7 +122,7 @@ def update_note(note_id: int, title: str, content: str):
     cursor = conn.cursor()
     cursor.execute("UPDATE notes SET title = ?, content = ? WHERE id = ?", (title, content, note_id))
     conn.commit()
-    cursor.execute("SELECT id, title, content, created_at FROM notes WHERE id = ?", (note_id,))
+    cursor.execute("SELECT id, title, content, created_at, user_id FROM notes WHERE id = ?", (note_id,))
     row = cursor.fetchone()
     conn.close()
     return row
