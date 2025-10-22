@@ -69,6 +69,9 @@ class NoteOut(Note):
     id: int
     created_at: str
 
+class DeleteResponse(BaseModel):
+    message: str
+
 # --- Database helpers ---
 from database import create_user as db_create_user, get_user as db_get_user
 from database import (
@@ -145,14 +148,20 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     return {"access_token": access_token, "token_type": "bearer"}
 
 # --- Notes CRUD endpoints ---
-@app.post("/notes", response_model=NoteOut)
+@app.post("/notes", 
+          response_model=NoteOut,
+          summary="Create Note",
+          description="Create a new note for the authenticated user")
 async def create_note(note: Note, user=Depends(get_current_user)):
     """Create a new note for the authenticated user"""
     user_id = user[0]  # user[0] is the user ID from the database
     row = db_create_note(note.title, note.content, user_id)
     return NoteOut(id=row[0], title=row[1], content=row[2], created_at=row[3])
 
-@app.get("/notes", response_model=list[NoteOut])
+@app.get("/notes", 
+         response_model=list[NoteOut],
+         summary="Get User Notes",
+         description="Get all notes for the authenticated user only")
 async def get_notes(user=Depends(get_current_user)):
     """Get all notes for the authenticated user only"""
     user_id = user[0]  # user[0] is the user ID from the database
@@ -172,7 +181,10 @@ async def get_note(note_id: int, user=Depends(get_current_user)):
     
     return NoteOut(id=note[0], title=note[1], content=note[2], created_at=note[3])
 
-@app.put("/notes/{note_id}", response_model=NoteOut)
+@app.put("/notes/{note_id}", 
+         response_model=NoteOut,
+         summary="Update Note",
+         description="Update a note if the user owns it")
 async def update_note(note_id: int, note: Note, user=Depends(get_current_user)):
     """Update a note if the user owns it"""
     existing_note = db_get_note(note_id)
@@ -186,7 +198,16 @@ async def update_note(note_id: int, note: Note, user=Depends(get_current_user)):
     updated_note = db_update_note(note_id, note.title, note.content)
     return NoteOut(id=updated_note[0], title=updated_note[1], content=updated_note[2], created_at=updated_note[3])
 
-@app.delete("/notes/{note_id}")
+@app.delete("/notes/{note_id}", 
+           response_model=DeleteResponse,
+           summary="Delete Note",
+           description="Delete a specific note if the user owns it",
+           responses={
+               200: {"description": "Note deleted successfully"},
+               404: {"description": "Note not found"},
+               403: {"description": "Access denied - not your note"},
+               401: {"description": "Authentication required"}
+           })
 async def delete_note(note_id: int, user=Depends(get_current_user)):
     """Delete a note if the user owns it"""
     existing_note = db_get_note(note_id)
