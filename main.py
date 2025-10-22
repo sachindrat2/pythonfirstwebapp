@@ -260,11 +260,12 @@ async def logout():
 # --- Health check endpoint ---
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
+    """Health check endpoint for Azure deployment"""
     return {
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
-        "message": "Notes API is running"
+        "message": "Notes API is running",
+        "version": "1.0.1"
     }
 
 # --- Initialize database on startup ---
