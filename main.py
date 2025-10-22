@@ -1,7 +1,6 @@
-
 import os
-from fastapi import FastAPI, HTTPException, Depends, Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import FastAPI, HTTPException, Depends, Request
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.templating import Jinja2Templates
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -10,144 +9,42 @@ from passlib.context import CryptContext
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
 import uvicorn
-from fastapi.responses import Response
 
 # --- FastAPI app ---
 app = FastAPI()
-
-# --- Test Swagger visibility ---
-@app.get("/test-visibility")
-def test_visibility():
-    return {"status": "visible"}
 
 # --- CORS configuration ---
 origins = [
     "http://localhost:8080",
     "http://127.0.0.1:8080",
     "http://localhost:8081",
-    "http://127.0.0.1:8081", 
+    "http://127.0.0.1:8081",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "https://sachindrat2.github.io",
     "https://sachindrat2.github.io/reactnoteApp",
     "https://ownnoteapp-hedxcahwcrhwb8hb.canadacentral-01.azurewebsites.net",
-    # Add more specific GitHub Pages patterns
-    "https://sachindrat2.github.io/reactnoteApp/",
-    "https://sachindrat2.github.io/reactnoteApp/login",
-    "https://sachindrat2.github.io/reactnoteApp/notes",
 ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
-    allow_headers=[
-        "Accept",
-        "Accept-Language", 
-        "Content-Language",
-        "Content-Type",
-        "Authorization",
-        "X-Requested-With",
-        "Origin",
-        "Cache-Control",
-        "Pragma",
-        "X-Custom-Header"
-    ],
-    expose_headers=["*"],
-    max_age=3600,
+    allow_methods=["*"],  # allow all HTTP methods
+    allow_headers=["*"],  # allow all headers
 )
 
-# --- Additional CORS middleware as backup ---
-@app.middleware("http")
-async def add_cors_headers(request: Request, call_next):
-    """
-    Additional middleware to ensure CORS headers are always present.
-    This is a backup in case the CORSMiddleware doesn't handle some edge cases.
-    """
-    response = await call_next(request)
-    origin = request.headers.get("origin")
-    
-    if origin and origin in origins:
-        response.headers["Access-Control-Allow-Origin"] = origin
-        response.headers["Access-Control-Allow-Credentials"] = "true"
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH"
-        response.headers["Access-Control-Allow-Headers"] = "Accept, Accept-Language, Content-Language, Content-Type, Authorization, X-Requested-With, Origin, Cache-Control, Pragma"
-        response.headers["Vary"] = "Origin"
-    
-    return response
-
-# --- Health check endpoint ---
-@app.get("/health")
-async def health_check():
-    return {
-        "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat(),
-        "cors_origins": len(origins),
-        "message": "API is running"
-    }
-
-# --- CORS debug endpoint ---
-@app.get("/cors-debug") 
-async def cors_debug(request: Request):
-    """Debug endpoint to check CORS configuration and request headers."""
-    return {
-        "message": "CORS debug endpoint",
-        "request_headers": dict(request.headers),
-        "request_origin": request.headers.get("origin"),
-        "allowed_origins": origins,
-        "cors_enabled": True,
-        "timestamp": datetime.utcnow().isoformat(),
-        "url": str(request.url),
-        "method": request.method
-    }
-
-# --- CORS test endpoint (POST) ---
-@app.post("/cors-test")
-async def cors_test_post(request: Request):
-    """Test POST request for CORS"""
-    return {
-        "message": "CORS POST test successful",
-        "origin": request.headers.get("origin"),
-        "timestamp": datetime.utcnow().isoformat()
-    }
-
-
-
-
-
-
-# --- Enhanced CORS preflight handler ---
+# --- Optional fallback for OPTIONS preflight ---
 @app.options("/{full_path:path}")
 async def preflight_handler(request: Request, full_path: str):
-    """
-    Handles all OPTIONS preflight requests to prevent CORS errors.
-    This is a fallback for any requests that might not be handled by the middleware.
-    """
     origin = request.headers.get("origin", "")
     response = Response(status_code=200)
-    
-    # Check if origin is allowed
     if origin in origins:
         response.headers["Access-Control-Allow-Origin"] = origin
-    elif any(origin.startswith(allowed) for allowed in origins):
-        response.headers["Access-Control-Allow-Origin"] = origin
-    
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH"
-    response.headers["Access-Control-Allow-Headers"] = "Accept, Accept-Language, Content-Language, Content-Type, Authorization, X-Requested-With, Origin, Cache-Control, Pragma"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type"
     response.headers["Access-Control-Allow-Credentials"] = "true"
-    response.headers["Access-Control-Max-Age"] = "3600"
-    response.headers["Vary"] = "Origin"
-    
     return response
-
-
-# --- Logout endpoint ---
-@app.post("/logout")
-async def logout():
-    # For JWT, logout is handled client-side by deleting the token.
-    # Optionally, you can instruct the client to remove the token.
-    return {"message": "Logged out. Please remove the token from your client."}
 
 # --- Templates ---
 templates = Jinja2Templates(directory="templates")
@@ -222,7 +119,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 def is_admin_user(user):
     return user and len(user) > 3 and user[3] == 1
 
-# --- Routes ---
+# --- Routes (examples) ---
 @app.get("/", response_class=HTMLResponse)
 async def read_root():
     return HTMLResponse(
@@ -247,74 +144,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     access_token = create_access_token({"sub": user[1]})
     return {"access_token": access_token, "token_type": "bearer"}
 
-# --- Notes CRUD endpoints ---
-@app.post("/notes", response_model=NoteOut)
-async def create_note(note: Note, user=Depends(get_current_user)):
-    user_id = user[0]  # user[0] is the user ID from the database
-    row = db_create_note(note.title, note.content, user_id)
-    return NoteOut(id=row[0], title=row[1], content=row[2], created_at=row[3])
-
-@app.get("/notes", response_model=list[NoteOut])
-async def get_notes(user=Depends(get_current_user)):
-    user_id = user[0]  # user[0] is the user ID from the database
-    rows = db_get_notes(user_id)
-    return [NoteOut(id=row[0], title=row[1], content=row[2], created_at=row[3]) for row in rows]
-
-@app.get("/admin/notes", response_model=list[NoteOut])
-async def get_all_notes(user=Depends(get_current_user)):
-    if not is_admin_user(user):
-        raise HTTPException(status_code=403, detail="Admin access required")
-    rows = db_get_notes()  # Get all notes for admin
-    return [NoteOut(id=row[0], title=row[1], content=row[2], created_at=row[3]) for row in rows]
-
-@app.get("/notes/{note_id}", response_model=NoteOut)
-async def get_note(note_id: int, user=Depends(get_current_user)):
-    note = db_get_note(note_id)
-    if not note:
-        raise HTTPException(status_code=404, detail="Note not found")
-    
-    # Check if user owns the note or is admin
-    if note[4] != user[0] and not is_admin_user(user):  # note[4] is user_id, user[0] is current user id
-        raise HTTPException(status_code=403, detail="Access denied")
-    
-    return NoteOut(id=note[0], title=note[1], content=note[2], created_at=note[3])
-
-@app.put("/notes/{note_id}", response_model=NoteOut)
-async def update_note(note_id: int, note: Note, user=Depends(get_current_user)):
-    existing_note = db_get_note(note_id)
-    if not existing_note:
-        raise HTTPException(status_code=404, detail="Note not found")
-    
-    # Check if user owns the note or is admin
-    if existing_note[4] != user[0] and not is_admin_user(user):  # existing_note[4] is user_id
-        raise HTTPException(status_code=403, detail="Access denied")
-    
-    updated_note = db_update_note(note_id, note.title, note.content)
-    return NoteOut(id=updated_note[0], title=updated_note[1], content=updated_note[2], created_at=updated_note[3])
-
-@app.delete("/notes/{note_id}")
-async def delete_note(note_id: int, user=Depends(get_current_user)):
-    existing_note = db_get_note(note_id)
-    if not existing_note:
-        raise HTTPException(status_code=404, detail="Note not found")
-    
-    # Check if user owns the note or is admin
-    if existing_note[4] != user[0] and not is_admin_user(user):  # existing_note[4] is user_id
-        raise HTTPException(status_code=403, detail="Access denied")
-    
-    deleted = db_delete_note(note_id)
-    if deleted:
-        return {"message": "Note deleted successfully"}
-    raise HTTPException(status_code=500, detail="Failed to delete note")
-
-# --- Admin dashboard route ---
-@app.get("/admin", response_class=HTMLResponse)
-async def admin_dashboard(request: Request, user=Depends(get_current_user)):
-    if not is_admin_user(user):
-        return RedirectResponse("/", status_code=302)
-    return templates.TemplateResponse("admin_dashboard.html", {"request": request, "user": user})
-
-# --- Startup for Azure ---
+# --- Startup ---
 @app.on_event("startup")
 async def startup_event():
     print("App started successfully.")
