@@ -1,3 +1,4 @@
+# Realtime Notes App - Azure Deployment Ready
 import os
 from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
