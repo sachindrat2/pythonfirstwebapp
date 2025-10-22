@@ -10,8 +10,26 @@ from jose import jwt, JWTError
 from datetime import datetime, timedelta
 import uvicorn
 
+# --- Initialize database on startup ---
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    print("Initializing database...")
+    try:
+        from database import create_database
+        create_database()
+        print("Database initialized successfully")
+        print("App started successfully.")
+    except Exception as e:
+        print(f"Database initialization error: {e}")
+    yield
+    # Shutdown
+    print("App shutting down...")
+
 # --- FastAPI app ---
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 
 # --- CORS configuration ---
 origins = [
@@ -248,10 +266,25 @@ async def health_check():
         "message": "Notes API is running"
     }
 
-# --- Startup ---
-@app.on_event("startup")
-async def startup_event():
-    print("App started successfully.")
+# --- Initialize database on startup ---
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    print("Initializing database...")
+    try:
+        from database import create_database
+        create_database()
+        print("Database initialized successfully")
+        print("App started successfully.")
+    except Exception as e:
+        print(f"Database initialization error: {e}")
+    yield
+    # Shutdown
+    print("App shutting down...")
+
+
 
 # --- Run server ---
 if __name__ == "__main__":
