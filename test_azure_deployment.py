@@ -39,8 +39,28 @@ def test_azure_deployment():
         else:
             print(f"⚠️ Admin test returned status {admin_test_response.status_code}")
         
+        # Test diagnostic routes
+        print("\n4. Testing diagnostic route /test-admin...")
+        test_admin_response = requests.get(f"{azure_url}/test-admin", timeout=30)
+        print(f"Test Admin Status: {test_admin_response.status_code}")
+        
+        if test_admin_response.status_code == 200:
+            print("✅ /test-admin works!")
+            print(f"Response: {test_admin_response.json()}")
+        else:
+            print(f"⚠️ /test-admin returned status {test_admin_response.status_code}")
+        
+        print("\n5. Testing alternative admin login /adminlogin...")
+        alt_admin_response = requests.get(f"{azure_url}/adminlogin", timeout=30)
+        print(f"Alternative Admin Login Status: {alt_admin_response.status_code}")
+        
+        if alt_admin_response.status_code == 200:
+            print("✅ Alternative admin login works!")
+        else:
+            print(f"⚠️ Alternative admin login returned status {alt_admin_response.status_code}")
+        
         # Test admin login
-        print("\n4. Testing admin login page...")
+        print("\n6. Testing original admin login /admin/login...")
         admin_response = requests.get(f"{azure_url}/admin/login", timeout=30)
         print(f"Admin Login Status: {admin_response.status_code}")
         

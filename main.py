@@ -609,8 +609,9 @@ async def health_check():
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
         "message": "Notes API is running",
-        "version": "1.0.2",
-        "deployment": "Azure App Service"
+        "version": "1.0.3", 
+        "deployment": "Azure App Service",
+        "build_time": datetime.utcnow().isoformat()
     }
 
 @app.get("/test-admin")
