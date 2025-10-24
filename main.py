@@ -344,25 +344,49 @@ async def admin_dashboard_page(request: Request):
 @app.get("/admin/login", response_class=HTMLResponse) 
 async def admin_login_page(request: Request):
     """Admin login HTML page"""
-    try:
-        return templates.TemplateResponse("admin_login.html", {"request": request})
-    except Exception as e:
-        # Fallback if template fails
-        return HTMLResponse(f"""
-        <!DOCTYPE html>
-        <html>
-        <head><title>Admin Login</title></head>
-        <body>
-        <h1>Admin Login</h1>
-        <p>Template loading error: {str(e)}</p>
-        <form method="post" action="/admin/login">
-            <input type="text" name="username" placeholder="Username" required><br><br>
-            <input type="password" name="password" placeholder="Password" required><br><br>
-            <button type="submit">Login</button>
-        </form>
-        </body>
-        </html>
-        """)
+    # Simple HTML response without template dependency
+    return HTMLResponse("""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Admin Login - Notes App</title>
+        <style>
+            body { font-family: Arial, sans-serif; max-width: 400px; margin: 100px auto; padding: 20px; }
+            .login-container { background: #f8f9fa; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            h1 { color: #333; text-align: center; margin-bottom: 30px; }
+            .form-group { margin-bottom: 20px; }
+            label { display: block; margin-bottom: 5px; color: #555; }
+            input[type="text"], input[type="password"] { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+            button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+            button:hover { background: #0056b3; }
+            .info { margin-top: 20px; padding: 10px; background: #e3f2fd; border-radius: 4px; font-size: 14px; }
+        </style>
+    </head>
+    <body>
+        <div class="login-container">
+            <h1>🔐 Admin Login</h1>
+            <form method="post" action="/admin/login">
+                <div class="form-group">
+                    <label for="username">Username:</label>
+                    <input type="text" name="username" id="username" placeholder="Enter admin username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" name="password" id="password" placeholder="Enter admin password" required>
+                </div>
+                <button type="submit">Login to Admin Panel</button>
+            </form>
+            <div class="info">
+                <strong>Default Credentials:</strong><br>
+                Username: admin<br>
+                Password: admin123
+            </div>
+        </div>
+    </body>
+    </html>
+    """)
 
 @app.post("/admin/login")
 async def admin_login(response: Response, form_data: OAuth2PasswordRequestForm = Depends()):
@@ -595,8 +619,19 @@ async def admin_test():
         "status": "success", 
         "message": "Admin routes are working!", 
         "admin_login_url": "/admin/login",
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.utcnow().isoformat(),
+        "routes_available": [
+            "/admin/login",
+            "/admin/dashboard", 
+            "/admin/api/stats",
+            "/admin/test"
+        ]
     }
+
+@app.get("/admin/simple")
+async def admin_simple():
+    """Simplest possible admin endpoint"""
+    return {"message": "Admin endpoint working"}
 
 @app.get("/favicon.ico")
 async def favicon():
