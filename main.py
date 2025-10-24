@@ -344,7 +344,25 @@ async def admin_dashboard_page(request: Request):
 @app.get("/admin/login", response_class=HTMLResponse) 
 async def admin_login_page(request: Request):
     """Admin login HTML page"""
-    return templates.TemplateResponse("admin_login.html", {"request": request})
+    try:
+        return templates.TemplateResponse("admin_login.html", {"request": request})
+    except Exception as e:
+        # Fallback if template fails
+        return HTMLResponse(f"""
+        <!DOCTYPE html>
+        <html>
+        <head><title>Admin Login</title></head>
+        <body>
+        <h1>Admin Login</h1>
+        <p>Template loading error: {str(e)}</p>
+        <form method="post" action="/admin/login">
+            <input type="text" name="username" placeholder="Username" required><br><br>
+            <input type="password" name="password" placeholder="Password" required><br><br>
+            <button type="submit">Login</button>
+        </form>
+        </body>
+        </html>
+        """)
 
 @app.post("/admin/login")
 async def admin_login(response: Response, form_data: OAuth2PasswordRequestForm = Depends()):
@@ -568,6 +586,16 @@ async def health_check():
         "timestamp": datetime.utcnow().isoformat(),
         "message": "Notes API is running",
         "version": "1.0.1"
+    }
+
+@app.get("/admin/test")
+async def admin_test():
+    """Test endpoint to verify admin routes work"""
+    return {
+        "status": "success", 
+        "message": "Admin routes are working!", 
+        "admin_login_url": "/admin/login",
+        "timestamp": datetime.utcnow().isoformat()
     }
 
 @app.get("/favicon.ico")
