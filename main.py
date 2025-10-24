@@ -389,7 +389,7 @@ async def admin_login_page(request: Request):
     """)
 
 @app.post("/admin/login")
-async def admin_login(response: Response, form_data: OAuth2PasswordRequestForm = Depends()):
+async def admin_login(request: Request, response: Response, form_data: OAuth2PasswordRequestForm = Depends()):
     """Admin login endpoint"""
     user = db_get_user(form_data.username)
     if not user or not verify_password_safe(form_data.password, user[2]):
@@ -409,6 +409,13 @@ async def admin_login(response: Response, form_data: OAuth2PasswordRequestForm =
         samesite="lax"
     )
     
+    # Check if this is a regular form submission (not AJAX)
+    accept_header = request.headers.get("accept", "")
+    if "application/json" not in accept_header and "text/html" in accept_header:
+        # This is a regular form submission, redirect directly
+        return RedirectResponse(url="/admin/dashboard", status_code=302)
+    
+    # This is an AJAX request, return JSON
     return {"access_token": access_token, "token_type": "bearer", "redirect": "/admin/dashboard"}
 
 @app.get("/admin/api/stats")

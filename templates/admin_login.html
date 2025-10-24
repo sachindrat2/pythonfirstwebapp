@@ -108,37 +108,54 @@
     </div>
 
     <script>
-        document.getElementById('loginForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, setting up login form');
             
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const errorDiv = document.getElementById('errorMessage');
+            const loginForm = document.getElementById('loginForm');
+            if (!loginForm) {
+                console.error('Login form not found!');
+                return;
+            }
             
-            try {
-                const formData = new FormData();
-                formData.append('username', username);
-                formData.append('password', password);
+            loginForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                console.log('Form submitted via JavaScript');
                 
-                const response = await fetch('/admin/login', {
-                    method: 'POST',
-                    body: formData
-                });
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                const errorDiv = document.getElementById('errorMessage');
                 
-                const data = await response.json();
+                console.log('Attempting login for:', username);
                 
-                if (response.ok) {
-                    // Store token and redirect
-                    localStorage.setItem('access_token', data.access_token);
-                    window.location.href = data.redirect || '/admin/dashboard';
-                } else {
-                    errorDiv.textContent = data.detail || 'Login failed';
+                try {
+                    const formData = new FormData();
+                    formData.append('username', username);
+                    formData.append('password', password);
+                    
+                    const response = await fetch('/admin/login', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    console.log('Response status:', response.status);
+                    const data = await response.json();
+                    console.log('Response data:', data);
+                    
+                    if (response.ok) {
+                        // Store token and redirect
+                        localStorage.setItem('access_token', data.access_token);
+                        console.log('Redirecting to:', data.redirect || '/admin/dashboard');
+                        window.location.href = data.redirect || '/admin/dashboard';
+                    } else {
+                        errorDiv.textContent = data.detail || 'Login failed';
+                        errorDiv.style.display = 'block';
+                    }
+                } catch (error) {
+                    console.error('Login error:', error);
+                    errorDiv.textContent = 'Network error. Please try again.';
                     errorDiv.style.display = 'block';
                 }
-            } catch (error) {
-                errorDiv.textContent = 'Network error. Please try again.';
-                errorDiv.style.display = 'block';
-            }
+            });
         });
     </script>
 </body>
