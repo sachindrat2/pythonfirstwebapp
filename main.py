@@ -609,8 +609,38 @@ async def health_check():
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
         "message": "Notes API is running",
-        "version": "1.0.1"
+        "version": "1.0.2",
+        "deployment": "Azure App Service"
     }
+
+@app.get("/test-admin")
+async def test_admin_route():
+    """Test if admin-like routes work outside /admin path"""
+    return {
+        "status": "success",
+        "message": "This route works - testing admin path issue",
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
+@app.get("/adminlogin", response_class=HTMLResponse)
+async def admin_login_alternative():
+    """Alternative admin login route without /admin/ path"""
+    return HTMLResponse("""
+    <!DOCTYPE html>
+    <html>
+    <head><title>Admin Login (Alternative)</title></head>
+    <body>
+        <h1>🔧 Admin Login (Alternative Route)</h1>
+        <p>This is a test to see if the issue is with /admin/ paths specifically.</p>
+        <form method="post" action="/admin/login">
+            <input type="text" name="username" placeholder="Username" required><br><br>
+            <input type="password" name="password" placeholder="Password" required><br><br>
+            <button type="submit">Login</button>
+        </form>
+        <p><a href="/admin/login">Try original admin login</a></p>
+    </body>
+    </html>
+    """)
 
 @app.get("/admin/test")
 async def admin_test():
