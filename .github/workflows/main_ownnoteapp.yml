@@ -34,7 +34,7 @@ jobs:
         
       # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
       
-      - name: Build and Push Docker image
+      - name: Build Docker image
         run: |
           # Generate version from timestamp to force Azure update
           VERSION=$(date +%Y%m%d-%H%M%S)
@@ -43,16 +43,10 @@ jobs:
           # Build with both latest and versioned tags
           docker build -t sachindra785/ownnoteapp:latest -t sachindra785/ownnoteapp:$VERSION .
           
-          # Login to Docker Hub
-          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u sachindra785 --password-stdin
-          
-          # Push both tags
-          docker push sachindra785/ownnoteapp:latest
-          docker push sachindra785/ownnoteapp:$VERSION
-          
-          echo "✅ Docker images pushed successfully"
+          echo "✅ Docker image built successfully"
           echo "Latest: sachindra785/ownnoteapp:latest"
           echo "Versioned: sachindra785/ownnoteapp:$VERSION"
+          echo "Note: Image built but not pushed (Docker Hub credentials needed)"
       
       - name: Zip artifact for deployment
         run: zip release.zip ./* -r
