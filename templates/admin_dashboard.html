@@ -1,84 +1,813 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Admin Dashboard</title>
+    <title>Admin Dashboard - Notes App</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f4f4; }
-        .container { max-width: 800px; margin: 40px auto; background: #fff; padding: 40px; border-radius: 12px; box-shadow: 0 4px 16px #bbb; }
-        h1 { color: #222; font-size: 2.2em; margin-bottom: 0.5em; }
-        h2 { color: #444; margin-top: 2em; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { padding: 12px; border: 1px solid #eee; text-align: left; font-size: 1em; }
-        th { background: #f7f7f7; font-weight: 600; }
-        .admin { color: #27ae60; font-weight: bold; }
-        .not-admin { color: #888; }
-        .delete-btn { background: #e74c3c; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 1em; transition: background 0.2s; }
-        .delete-btn:hover { background: #c0392b; }
-        .form-section { margin-top: 2em; background: #f9f9f9; padding: 24px; border-radius: 8px; box-shadow: 0 2px 8px #eee; }
-        .form-section h2 { margin-top: 0; }
-        .form-group { margin-bottom: 16px; }
-        label { display: block; margin-bottom: 6px; font-weight: 500; }
-        input[type='text'], input[type='password'] { width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc; font-size: 1em; }
-        .create-btn { background: #3498db; color: #fff; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 1em; transition: background 0.2s; }
-        .create-btn:hover { background: #2980b9; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #f8fafc; color: #334155; }
+        
+        .sidebar { position: fixed; left: 0; top: 0; width: 250px; height: 100vh; background: #1e293b; color: #f1f5f9; padding: 20px 0; z-index: 1000; }
+        .sidebar h2 { padding: 0 20px; margin-bottom: 30px; color: #60a5fa; font-size: 1.4em; }
+        .nav-item { display: block; padding: 15px 20px; color: #cbd5e1; text-decoration: none; transition: all 0.2s; border-left: 3px solid transparent; }
+        .nav-item:hover, .nav-item.active { background: #334155; border-left-color: #60a5fa; color: #f1f5f9; }
+        .nav-item i { margin-right: 10px; width: 20px; }
+        
+        .main-content { margin-left: 250px; padding: 20px; min-height: 100vh; }
+        .header { background: white; padding: 20px 30px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 30px; }
+        .header-flex { display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 2em; color: #1e293b; }
+        .user-info { display: flex; align-items: center; gap: 15px; }
+        .logout-btn { background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; transition: background 0.2s; }
+        .logout-btn:hover { background: #dc2626; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center; }
+        .stat-number { font-size: 2.5em; font-weight: bold; color: #3b82f6; margin-bottom: 5px; }
+        .stat-label { color: #6b7280; font-size: 0.9em; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        .content-section { background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 30px; overflow: hidden; }
+        .section-header { padding: 20px 30px; border-bottom: 1px solid #e5e7eb; background: #f9fafb; }
+        .section-title { font-size: 1.3em; color: #1e293b; }
+        .section-content { padding: 30px; }
+        
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+        th { background: #f9fafb; font-weight: 600; color: #374151; }
+        tr:hover { background: #f9fafb; }
+        
+        .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.8em; font-weight: 500; }
+        .badge-admin { background: #dcfce7; color: #166534; }
+        .badge-user { background: #fef3c7; color: #92400e; }
+        
+        .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9em; transition: all 0.2s; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-primary { background: #3b82f6; color: white; }
+        .btn-primary:hover { background: #2563eb; }
+        
+        .tab-container { margin-bottom: 20px; }
+        .tab-buttons { display: flex; border-bottom: 2px solid #e5e7eb; }
+        .tab-btn { padding: 15px 25px; background: none; border: none; cursor: pointer; font-size: 1em; color: #6b7280; transition: all 0.2s; }
+        .tab-btn.active { color: #3b82f6; border-bottom: 2px solid #3b82f6; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        /* Charts Section */
+        .charts-section { margin-top: 30px; }
+        .charts-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 20px; 
+            margin-bottom: 30px; 
+        }
+        .chart-full-width { width: 100%; }
+        .chart-container { 
+            background: white; 
+            border-radius: 12px; 
+            padding: 20px; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .chart-container:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+        .chart-container h3 { 
+            margin-bottom: 15px; 
+            color: #475569; 
+            font-size: 1.2em;
+            font-weight: 600;
+            text-align: center;
+        }
+        .chart-container canvas { 
+            max-width: 100%; 
+            height: 300px !important;
+            width: 100% !important;
+        }
+        
+        /* Prevent animations from affecting layout */
+        .stat-card {
+            transition: box-shadow 0.3s ease !important;
+            transform: none !important;
+        }
+        .stat-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .stat-card .stat-number {
+            font-size: 2.5em !important;
+            font-weight: bold !important;
+            color: #3b82f6 !important;
+        }
+        .stat-card .stat-label {
+            font-size: 0.9em !important;
+            color: #6b7280 !important;
+        }
+        
+        /* Loading animations */
+        .loading {
+            opacity: 0.6;
+            position: relative;
+        }
+        .loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            transform: translate(-50%, -50%);
+        }
+        
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        
+        /* Stat card animations */
+        .stat-card {
+            animation: slideInUp 0.6s ease-out;
+        }
+        .stat-card:nth-child(1) { animation-delay: 0.1s; }
+        .stat-card:nth-child(2) { animation-delay: 0.2s; }
+        .stat-card:nth-child(3) { animation-delay: 0.3s; }
+        .stat-card:nth-child(4) { animation-delay: 0.4s; }
+        
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Chart container animations */
+        .chart-container {
+            animation: fadeInScale 0.8s ease-out;
+        }
+        .charts-grid .chart-container:nth-child(1) { animation-delay: 0.5s; }
+        .charts-grid .chart-container:nth-child(2) { animation-delay: 0.7s; }
+        .chart-full-width .chart-container { animation-delay: 0.9s; }
+        
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        /* Prevent layout shifts during animations */
+        * {
+            box-sizing: border-box;
+        }
+        
+        .main-content {
+            overflow-x: hidden;
+        }
+        
+        .stats-grid, .charts-grid {
+            will-change: auto;
+        }
+        
+        /* Smooth transitions only for specific properties */
+        .chart-container, .stat-card {
+            will-change: box-shadow;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .main-content { margin-left: 0; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .charts-grid { grid-template-columns: 1fr; }
+            .chart-container canvas { 
+                height: 250px !important;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Admin Dashboard</h1>
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <p>Welcome, <b>{{ user[1] }}</b>! You have <span class='admin'>admin access</span>.</p>
-            </div>
-            <div>
-                <a href="/admin/account" style="margin-right: 16px; text-decoration: none; color: #3498db; font-weight: 500;">Account</a>
-                <form method="post" action="/admin/logout" style="display:inline;">
-                    <button class="delete-btn" type="submit" style="background:#e67e22;">Logout</button>
-                </form>
-            </div>
-        </div>
-        <div class="form-section">
-            <h2>Create New User</h2>
-            <form method="post" action="/admin/create">
-                <input type="hidden" name="token" value="{{ token }}" />
-                <div class="form-group">
-                    <label for="username">Username:</label>
-                    <input type="text" id="username" name="username" required />
-                </div>
-                <div class="form-group">
-                    <label for="password">Password:</label>
-                    <input type="password" id="password" name="password" required />
-                </div>
-                <div class="form-group">
-                    <label for="is_admin">Is Admin:</label>
-                    <select id="is_admin" name="is_admin">
-                        <option value="0">No</option>
-                        <option value="1">Yes</option>
-                    </select>
-                </div>
-                <button class="create-btn" type="submit">Create User</button>
-            </form>
-        </div>
-        <h2>All Users</h2>
-        <table>
-            <tr><th>ID</th><th>Username</th><th>Admin</th><th>Action</th></tr>
-            {% for u in users %}
-            <tr>
-                <td>{{ u[0] }}</td>
-                <td>{{ u[1] }}</td>
-                <td>{% if u[2] %}Yes{% else %}No{% endif %}</td>
-                <td>
-                    <form method="post" action="/admin/delete/{{ u[0] }}" style="display:inline;">
-                        <input type="hidden" name="token" value="{{ token }}" />
-                        <button class="delete-btn" type="submit">Delete</button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </table>
-        {% if debug_info %}
-        <pre style='background:#f7f7f7; padding:10px; border-radius:6px;'>{{ debug_info }}</pre>
-        {% endif %}
+    <div class="sidebar">
+        <h2>📊 Admin Panel</h2>
+        <a href="#dashboard" class="nav-item active" onclick="showTab('dashboard')">
+            <i>📈</i> Dashboard
+        </a>
+        <a href="#users" class="nav-item" onclick="showTab('users')">
+            <i>👥</i> Users
+        </a>
+        <a href="#notes" class="nav-item" onclick="showTab('notes')">
+            <i>📝</i> All Notes
+        </a>
+        <a href="#settings" class="nav-item" onclick="showTab('settings')">
+            <i>⚙️</i> Settings
+        </a>
     </div>
+    
+    <div class="main-content">
+        <div class="header">
+            <div class="header-flex">
+                <h1>Admin Dashboard</h1>
+                <div class="user-info">
+                    <span>Welcome, <strong>Admin</strong></span>
+                    <button class="logout-btn" onclick="logout()">Logout</button>
+                </div>
+            </div>
+        </div>
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalUsers">-</div>
+                    <div class="stat-label">Total Users</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="adminUsers">-</div>
+                    <div class="stat-label">Admin Users</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalNotes">-</div>
+                    <div class="stat-label">Total Notes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="recentNotes">-</div>
+                    <div class="stat-label">Recent Notes</div>
+                </div>
+            </div>
+            
+            <!-- Animated Charts Section -->
+            <div class="charts-section">
+                <div class="content-section">
+                    <div class="section-header">
+                        <h2 class="section-title">📊 System Analytics</h2>
+                    </div>
+                    <div class="section-content">
+                        <div class="charts-grid">
+                            <div class="chart-container">
+                                <h3>User Distribution</h3>
+                                <canvas id="userDistributionChart" width="400" height="300"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <h3>Notes Activity</h3>
+                                <canvas id="notesActivityChart" width="400" height="300"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-full-width">
+                            <div class="chart-container">
+                                <h3>User Activity Timeline</h3>
+                                <canvas id="activityTimelineChart" width="800" height="400"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Users Tab -->
+        <div id="users" class="tab-content">
+            <div class="content-section">
+                <div class="section-header">
+                    <h2 class="section-title">User Management</h2>
+                </div>
+                <div class="section-content">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Username</th>
+                                    <th>Role</th>
+                                    <th>Notes Count</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody">
+                                <!-- Users will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Notes Tab -->
+        <div id="notes" class="tab-content">
+            <div class="content-section">
+                <div class="section-header">
+                    <h2 class="section-title">All Notes</h2>
+                </div>
+                <div class="section-content">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Title</th>
+                                    <th>Author</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="notesTableBody">
+                                <!-- Notes will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Settings Tab -->
+        <div id="settings" class="tab-content">
+            <div class="content-section">
+                <div class="section-header">
+                    <h2 class="section-title">System Settings</h2>
+                </div>
+                <div class="section-content">
+                    <p>Settings panel coming soon...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab functionality
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.nav-item').forEach(nav => {
+                nav.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            document.querySelector(`[onclick="showTab('${tabName}')"]`).classList.add('active');
+            
+            // Load data based on tab
+            if (tabName === 'dashboard') loadStats();
+            if (tabName === 'users') loadUsers();
+            if (tabName === 'notes') loadNotes();
+        }
+
+        // Load statistics
+        async function loadStats() {
+            try {
+                const response = await fetch('/admin/api/stats');
+                const stats = await response.json();
+                
+                // Animate the number changes
+                animateNumberChange('totalUsers', stats.total_users);
+                animateNumberChange('adminUsers', stats.admin_users);
+                animateNumberChange('totalNotes', stats.total_notes);
+                animateNumberChange('recentNotes', stats.recent_notes);
+                
+                // Update charts with new data
+                updateCharts(stats);
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        // Animate number changes smoothly
+        function animateNumberChange(elementId, targetValue) {
+            const element = document.getElementById(elementId);
+            const currentValue = parseInt(element.textContent) || 0;
+            
+            // Only animate if there's a significant change
+            if (Math.abs(targetValue - currentValue) < 1) {
+                element.textContent = targetValue;
+                return;
+            }
+            
+            const difference = targetValue - currentValue;
+            const steps = Math.min(15, Math.abs(difference));
+            const stepValue = difference / steps;
+            
+            let currentStep = 0;
+            const timer = setInterval(() => {
+                currentStep++;
+                const newValue = Math.round(currentValue + (stepValue * currentStep));
+                element.textContent = newValue;
+                
+                if (currentStep >= steps) {
+                    clearInterval(timer);
+                    element.textContent = targetValue;
+                }
+            }, 80);
+        }
+
+        // Load users
+        async function loadUsers() {
+            try {
+                const response = await fetch('/admin/api/users');
+                const users = await response.json();
+                
+                const tbody = document.getElementById('usersTableBody');
+                tbody.innerHTML = users.map(user => `
+                    <tr>
+                        <td>${user.id}</td>
+                        <td>${user.username}</td>
+                        <td>
+                            <span class="badge ${user.is_admin ? 'badge-admin' : 'badge-user'}">
+                                ${user.is_admin ? 'Admin' : 'User'}
+                            </span>
+                        </td>
+                        <td>${user.note_count}</td>
+                        <td>
+                            <button class="btn btn-danger" onclick="deleteUser(${user.id}, '${user.username}')">
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading users:', error);
+            }
+        }
+
+        // Load notes
+        async function loadNotes() {
+            try {
+                const response = await fetch('/admin/api/notes');
+                const notes = await response.json();
+                
+                const tbody = document.getElementById('notesTableBody');
+                tbody.innerHTML = notes.map(note => `
+                    <tr>
+                        <td>${note.id}</td>
+                        <td>${note.title}</td>
+                        <td>${note.username}</td>
+                        <td>${new Date(note.created_at).toLocaleDateString()}</td>
+                        <td>
+                            <button class="btn btn-danger" onclick="deleteNote(${note.id}, '${note.title}')">
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading notes:', error);
+            }
+        }
+
+        // Delete user
+        async function deleteUser(userId, username) {
+            if (!confirm(`Are you sure you want to delete user "${username}" and all their notes?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/admin/api/users/${userId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    alert('User deleted successfully');
+                    loadUsers();
+                    loadStats(); // Refresh stats
+                } else {
+                    const error = await response.json();
+                    alert('Error: ' + error.detail);
+                }
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                alert('Error deleting user');
+            }
+        }
+
+        // Delete note
+        async function deleteNote(noteId, title) {
+            if (!confirm(`Are you sure you want to delete note "${title}"?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/admin/api/notes/${noteId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    alert('Note deleted successfully');
+                    loadNotes();
+                    loadStats(); // Refresh stats
+                } else {
+                    const error = await response.json();
+                    alert('Error: ' + error.detail);
+                }
+            } catch (error) {
+                console.error('Error deleting note:', error);
+                alert('Error deleting note');
+            }
+        }
+
+        // Logout
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                // Clear any stored tokens
+                localStorage.removeItem('access_token');
+                sessionStorage.removeItem('access_token');
+                // Redirect to login
+                window.location.href = '/admin/login';
+            }
+        }
+
+        // Chart instances
+        let userDistributionChart, notesActivityChart, activityTimelineChart;
+
+        // Initialize charts with animation
+        function initializeCharts() {
+            // User Distribution Pie Chart
+            const userCtx = document.getElementById('userDistributionChart').getContext('2d');
+            userDistributionChart = new Chart(userCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Regular Users', 'Admin Users'],
+                    datasets: [{
+                        data: [0, 0],
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.8)',
+                            'rgba(168, 85, 247, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(59, 130, 246, 1)',
+                            'rgba(168, 85, 247, 1)'
+                        ],
+                        borderWidth: 2,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        animateRotate: true,
+                        animateScale: false,
+                        duration: 1500,
+                        easing: 'easeInOutQuart'
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Notes Activity Bar Chart
+            const notesCtx = document.getElementById('notesActivityChart').getContext('2d');
+            notesActivityChart = new Chart(notesCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Total Notes', 'Recent Notes', 'Active Users'],
+                    datasets: [{
+                        label: 'Count',
+                        data: [0, 0, 0],
+                        backgroundColor: [
+                            'rgba(34, 197, 94, 0.8)',
+                            'rgba(251, 191, 36, 0.8)',
+                            'rgba(239, 68, 68, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(34, 197, 94, 1)',
+                            'rgba(251, 191, 36, 1)',
+                            'rgba(239, 68, 68, 1)'
+                        ],
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 1200,
+                        easing: 'easeInOutQuad'
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // Activity Timeline Line Chart
+            const timelineCtx = document.getElementById('activityTimelineChart').getContext('2d');
+            activityTimelineChart = new Chart(timelineCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'New Users',
+                        data: [10, 15, 25, 20, 30, 35],
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    }, {
+                        label: 'New Notes',
+                        data: [50, 75, 125, 100, 150, 175],
+                        borderColor: 'rgba(34, 197, 94, 1)',
+                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: 'rgba(34, 197, 94, 1)',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 1500,
+                        easing: 'easeInOutCubic'
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Load detailed chart data
+        async function loadChartData() {
+            try {
+                const response = await fetch('/admin/api/chart-data');
+                if (!response.ok) throw new Error('Failed to load chart data');
+                
+                const data = await response.json();
+                updateChartsWithDetailedData(data);
+            } catch (error) {
+                console.log('Chart data loading error:', error);
+                // Fallback to basic stats if detailed data fails
+                const statsResponse = await fetch('/admin/api/stats');
+                if (statsResponse.ok) {
+                    const stats = await statsResponse.json();
+                    updateChartsWithBasicStats(stats);
+                }
+            }
+        }
+
+        // Update charts with detailed data
+        function updateChartsWithDetailedData(data) {
+            if (userDistributionChart && data.user_distribution) {
+                userDistributionChart.data.labels = data.user_distribution.labels;
+                userDistributionChart.data.datasets[0].data = data.user_distribution.data;
+                userDistributionChart.update('animate');
+            }
+
+            if (notesActivityChart && data.stats) {
+                notesActivityChart.data.datasets[0].data = [
+                    data.stats.total_notes,
+                    Math.floor(data.stats.total_notes * 0.3), // Assume 30% are recent
+                    data.stats.active_users
+                ];
+                notesActivityChart.update('animate');
+            }
+
+            if (activityTimelineChart && data.monthly_activity) {
+                activityTimelineChart.data.labels = data.monthly_activity.labels;
+                activityTimelineChart.data.datasets[0].data = data.monthly_activity.users;
+                activityTimelineChart.data.datasets[1].data = data.monthly_activity.notes;
+                activityTimelineChart.update('animate');
+            }
+        }
+
+        // Update charts with basic stats (fallback)
+        function updateChartsWithBasicStats(stats) {
+            if (userDistributionChart) {
+                const regularUsers = (stats.total_users || 0) - (stats.admin_users || 0);
+                userDistributionChart.data.datasets[0].data = [regularUsers, stats.admin_users || 0];
+                userDistributionChart.update('animate');
+            }
+
+            if (notesActivityChart) {
+                notesActivityChart.data.datasets[0].data = [
+                    stats.total_notes || 0,
+                    stats.recent_notes || 0,
+                    stats.total_users || 0
+                ];
+                notesActivityChart.update('animate');
+            }
+
+            // Keep existing timeline data or use simulated data
+            if (activityTimelineChart) {
+                const currentMonth = new Date().getMonth();
+                const userData = activityTimelineChart.data.datasets[0].data;
+                const notesData = activityTimelineChart.data.datasets[1].data;
+                
+                userData[currentMonth % 6] = Math.max(1, Math.floor(stats.total_users / 3));
+                notesData[currentMonth % 6] = Math.max(1, Math.floor(stats.total_notes / 2));
+                
+                activityTimelineChart.update('animate');
+            }
+        }
+
+        // Update charts with real data (legacy function for compatibility)
+        function updateCharts(stats) {
+            updateChartsWithBasicStats(stats);
+        }
+
+        // Auto-refresh charts every 60 seconds (less frequent to reduce animations)
+        function startChartAutoRefresh() {
+            setInterval(async () => {
+                await loadChartData();
+            }, 60000);
+        }
+
+        // Add subtle glow animation to stat cards
+        function animateStatCards() {
+            const statCards = document.querySelectorAll('.stat-card');
+            statCards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.style.boxShadow = '0 8px 25px rgba(59, 130, 246, 0.2)';
+                    card.style.transition = 'box-shadow 0.6s ease';
+                    setTimeout(() => {
+                        card.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                    }, 800);
+                }, index * 300);
+            });
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStats();
+            initializeCharts();
+            
+            // Load detailed chart data after a short delay
+            setTimeout(() => {
+                loadChartData();
+                animateStatCards();
+            }, 1000);
+            
+            startChartAutoRefresh();
+        });
+    </script>
 </body>
 </html>

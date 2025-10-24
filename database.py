@@ -136,6 +136,48 @@ def delete_note(note_id: int):
     conn.close()
     return deleted
 
+def get_users():
+    """Get all users from the database"""
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, username, password, is_admin FROM users ORDER BY username")
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
+def delete_user(user_id: int):
+    """Delete a user by ID"""
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    conn.commit()
+    deleted = cursor.rowcount > 0
+    conn.close()
+    return deleted
+
+def delete_user_notes(user_id: int):
+    """Delete all notes belonging to a user"""
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM notes WHERE user_id = ?", (user_id,))
+    conn.commit()
+    deleted_count = cursor.rowcount
+    conn.close()
+    return deleted_count
+
+def get_all_notes():
+    """Get all notes from all users (admin function)"""
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT n.id, n.title, n.content, n.created_at, n.user_id 
+        FROM notes n 
+        ORDER BY n.created_at DESC
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
 if __name__ == "__main__":
     create_database()
     print("Database and table created successfully.")
